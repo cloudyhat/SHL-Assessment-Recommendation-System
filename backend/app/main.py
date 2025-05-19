@@ -1,26 +1,24 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from rag_pipeline import query_index
+import sys
+import torch
+# to avoid pytorch errors when importing streamlit.
+sys.modules["torch.classes"] = None
 
-app = FastAPI()
+import streamlit as st
+from query import recommend_assessments
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+st.title("SHL Assessment Recommendation System")
 
-class QueryRequest(BaseModel):
-    query: str
+user_input = st.text_area("Enter job description or query:")
 
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
-
-@app.post("/recommend")
-def recommend(query_request: QueryRequest):
-    results = query_index(query_request.query)
-    return {"recommended_assessments": results}
+if st.button("Recommend"):
+    if user_input:
+        recommendations = recommend_assessments(user_input, top_k=10)
+        for idx, rec in enumerate(recommendations, 1):
+            content = rec.page_content
+            if "URL:" in content:
+                parts = content.split("URL:")
+                st.markdown(f"**{idx}.** {parts[0].strip()} [Link]({parts[1].strip()})")
+            else:
+                st.write(f"{idx}. {content}")
+    else:
+        st.warning("Please enter a query.")

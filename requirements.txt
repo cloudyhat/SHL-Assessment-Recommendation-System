@@ -12,3 +12,6 @@ chromadb
 huggingface_hub
 sentence-transformers
 pandas
+langchain-community
+langchain-huggingface
+torch
